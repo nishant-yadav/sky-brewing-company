@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Contact" description="Contact page for the coffee roastery">
+  <section class="space-y-10">
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-8">
+      <h2 class="text-4xl font-bold">Get in touch</h2>
+      <p class="mt-5 max-w-3xl leading-8 text-slate-300">Use the contact details below or add a simple form when you're ready to collect inquiries.</p>
+    </div>
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-8">
+        <h3 class="text-2xl font-semibold">Visit us</h3>
+        <p class="mt-4 text-slate-300">Add your roastery address and a map embed here.</p>
+      </div>
+      <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-8">
+        <h3 class="text-2xl font-semibold">Inquiries</h3>
+        <p class="mt-4 text-slate-300">Email, phone, and wholesale inquiry details can be displayed here.</p>
+      </div>
+    </div>
+
+    <div class="grid gap-6 rounded-3xl border border-slate-800 bg-slate-900/80 p-8 sm:grid-cols-2">
+      <article>
+        <h3 class="text-2xl font-semibold">Opening hours</h3>
+        <p class="mt-4 text-slate-300">Monday–Friday: 8am–6pm<br>Saturday: 9am–4pm<br>Sunday: Closed</p>
+      </article>
+      <article>
+        <h3 class="text-2xl font-semibold">Reach out</h3>
+        <p class="mt-4 text-slate-300">hello@coffeeroastery.example<br>+1 (555) 123-4567</p>
+      </article>
+    </div>
+
+    <div class="rounded-3xl border border-slate-800 bg-slate-900/80 p-8">
+      <h3 class="text-2xl font-semibold">Follow us</h3>
+      <p class="mt-4 text-slate-300">Keep up with new roast drops, shop updates, and tasting events on social media.</p>
+      <p class="mt-4 text-slate-300">Instagram: @coffee_roastery<br>Twitter: @coffee_roastery</p>
+    </div>
+  </section>
+</BaseLayout>

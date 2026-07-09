@@ -1,0 +1,20 @@
+{
+  "name": "coffee-roastery-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "deploy": "npm run build && npx gh-pages -d dist"
+  },
+  "dependencies": {
+    "astro": "^2.6.5"
+  },
+  "devDependencies": {
+    "@astrojs/tailwind": "^4.0.0",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.4"
+  }
+}
