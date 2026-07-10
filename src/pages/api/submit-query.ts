@@ -99,47 +99,76 @@ async function getServiceAccountAccessToken(clientEmail: string, rawPrivateKey: 
     iat,
   };
 
-  function base64UrlEncodeString(input: string) {
-    if (typeof btoa !== 'undefined') {
-      return btoa(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const base64abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+  function encodeBase64(bytes: Uint8Array) {
+    let base64 = '';
+    for (let i = 0; i < bytes.length; i += 3) {
+      const chunk = (bytes[i] << 16) | ((bytes[i + 1] ?? 0) << 8) | (bytes[i + 2] ?? 0);
+      base64 += base64abc[(chunk >> 18) & 0x3f];
+      base64 += base64abc[(chunk >> 12) & 0x3f];
+      base64 += i + 1 < bytes.length ? base64abc[(chunk >> 6) & 0x3f] : '=';
+      base64 += i + 2 < bytes.length ? base64abc[chunk & 0x3f] : '=';
     }
-    // Node fallback
-    return (globalThis as any).Buffer.from(input, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return base64;
+  }
+
+  function base64UrlEncodeString(input: string) {
+    const bytes = new TextEncoder().encode(input);
+    return encodeBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
   const unsigned = `${base64UrlEncodeString(JSON.stringify(header))}.${base64UrlEncodeString(JSON.stringify(claim))}`;
 
-  // Sign with RSA SHA256 using Node's crypto
-  // Use Web Crypto (available in Vercel Edge). Fallbacks use Node globals where available.
+  // Sign with RSA SHA256 using the Web Crypto API in Edge.
   const subtle = (globalThis as any).crypto?.subtle;
   if (!subtle) throw new Error('Web Crypto API not available in this runtime');
 
-  function pemToArrayBuffer(pem: string) {
-    // Remove header/footer and newlines
-    const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
-    // atob in browser, Buffer in node
-    let bin: string;
-    if (typeof atob !== 'undefined') bin = atob(b64);
-    else bin = (globalThis as any).Buffer.from(b64, 'base64').toString('binary');
-    const len = bin.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes.buffer;
+  function base64UrlEncode(bytes: Uint8Array) {
+    return encodeBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   }
 
-  function base64UrlEncode(input: Uint8Array | string) {
-    let b64: string;
-    if (typeof input === 'string') {
-      if (typeof btoa !== 'undefined') b64 = btoa(input);
-      else b64 = (globalThis as any).Buffer.from(input, 'utf8').toString('base64');
+  function base64UrlToUint8Array(base64: string) {
+    const normalized = base64.replace(/-/g, '+').replace(/_/g, '/');
+    const padLength = (4 - (normalized.length % 4)) % 4;
+    const padded = normalized + '='.repeat(padLength);
+
+    let binary: string;
+    if (typeof atob !== 'undefined') {
+      binary = atob(padded);
     } else {
-      // Uint8Array -> binary string
-      let binary = '';
-      for (let i = 0; i < input.length; i++) binary += String.fromCharCode(input[i]);
-      if (typeof btoa !== 'undefined') b64 = btoa(binary);
-      else b64 = (globalThis as any).Buffer.from(input).toString('base64');
+      const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+      const lookup = new Uint8Array(256);
+      for (let i = 0; i < base64chars.length; i++) lookup[base64chars.charCodeAt(i)] = i;
+      const len = padded.length;
+      const bytes = [] as number[];
+      let buffer = 0;
+      let bits = 0;
+      for (let i = 0; i < len; i++) {
+        const ch = padded.charCodeAt(i);
+        if (ch === 61) break;
+        const value = lookup[ch];
+        buffer = (buffer << 6) | value;
+        bits += 6;
+        if (bits >= 8) {
+          bits -= 8;
+          bytes.push((buffer >> bits) & 0xff);
+        }
+      }
+      binary = String.fromCharCode(...bytes);
     }
-    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    const len = binary.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+  }
+
+  function pemToArrayBuffer(pem: string) {
+    const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+    return base64UrlToUint8Array(b64).buffer;
   }
 
   const alg = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' } as any;
