@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Queries · Coffee Roastery</title>
     <meta name="description" content="Submit your coffee inquiry or question to Sky Brewing Company">
-  <link rel="stylesheet" href="/sky-brewing-company/_astro/about.960fb5e7.css" /><script type="module">const s=document.getElementById("queryForm"),e=document.getElementById("submitBtn"),n=document.getElementById("successMessage"),o=document.getElementById("errorMessage");s.addEventListener("submit",async r=>{r.preventDefault(),n.classList.add("hidden"),o.classList.add("hidden"),e.disabled=!0,e.textContent="Submitting...";try{const t=new FormData(s),d=Object.fromEntries(t);if((await fetch("/sky-brewing-company/api/submit-query",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)})).ok)n.classList.remove("hidden"),s.reset(),e.textContent="Send Query",e.disabled=!1;else throw new Error("Submission failed")}catch(t){console.error("Form submission error:",t),o.classList.remove("hidden"),e.textContent="Send Query",e.disabled=!1}});
+  <link rel="stylesheet" href="/_astro/about.199ca4ae.css" /><script type="module">const s=document.getElementById("queryForm"),e=document.getElementById("submitBtn"),n=document.getElementById("successMessage"),o=document.getElementById("errorMessage");s.addEventListener("submit",async r=>{r.preventDefault(),n.classList.add("hidden"),o.classList.add("hidden"),e.disabled=!0,e.textContent="Submitting...";try{const t=new FormData(s),d=Object.fromEntries(t);if((await fetch("/api/submit-query",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(d)})).ok)n.classList.remove("hidden"),s.reset(),e.textContent="Send Query",e.disabled=!1;else throw new Error("Submission failed")}catch(t){console.error("Form submission error:",t),o.classList.remove("hidden"),e.textContent="Send Query",e.disabled=!1}});
 </script></head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <div class="mx-auto max-w-6xl px-6 py-8">
@@ -16,10 +16,10 @@
             <h1 class="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">Crafted coffee for every story.</h1>
           </div>
           <nav class="flex flex-wrap gap-4 text-sm text-slate-300">
-            <a href="/sky-brewing-company/" class="hover:text-white">Home</a>
-            <a href="/sky-brewing-company/about/" class="hover:text-white">About</a>
-            <a href="/sky-brewing-company/contact/" class="hover:text-white">Contact</a>
-            <a href="/sky-brewing-company/queries/" class="hover:text-white">Queries</a>
+            <a href="/" class="hover:text-white">Home</a>
+            <a href="/about/" class="hover:text-white">About</a>
+            <a href="/contact/" class="hover:text-white">Contact</a>
+            <a href="/queries/" class="hover:text-white">Queries</a>
           </nav>
         </div>
       </header>

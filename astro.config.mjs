@@ -1,10 +1,13 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel/edge';
+
+const basePath = process.env.SITE_BASE || '/';
+const siteUrl = process.env.SITE_URL || 'https://sky-brewing-company.vercel.app';
 
 export default defineConfig({
-  site: 'https://nishant-yadav.github.io/sky-brewing-company',
-  base: '/sky-brewing-company/',
+  site: siteUrl,
+  base: basePath,
   output: 'hybrid',
   adapter: vercel(),
   integrations: [tailwind()],

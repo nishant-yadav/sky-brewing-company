@@ -149,3 +149,5 @@ vite.config.ts.timestamp-*
 # Query data backups (if using local file storage)
 queries.json
 queries.backup.json
+.vercel
+.env*
