@@ -1,5 +1,8 @@
 import type { APIRoute } from 'astro';
 
+// Force this API route to run on Node.js instead of the Edge runtime
+export const runtime = 'nodejs';
+
 // Disable prerendering for this endpoint - it needs to handle dynamic requests
 export const prerender = false;
 
