@@ -2,7 +2,7 @@
   "name": "coffee-roastery-app",
   "private": true,
   "engines": {
-    "node": "24.x"
+    "node": "18.x"
   },
   "type": "module",
   "scripts": {
