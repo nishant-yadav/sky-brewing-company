@@ -1,10 +1,8 @@
 import type { APIRoute } from 'astro';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import * as jose from 'jose';
 
 // Force this API route to run on Node.js instead of the Edge runtime
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 // Disable prerendering for this endpoint - it needs to handle dynamic requests
 export const prerender = false;
@@ -127,32 +125,9 @@ async function getServiceAccountAccessToken(clientEmail: string, rawPrivateKey: 
 }
 
 // Function to save to local JSON file as fallback
-async function saveToLocalFile(data: QueryData): Promise<void> {
-  console.warn('Google Sheets failed. Saving query to local JSON file.');
-  const dataDir = path.join(process.cwd(), '.data');
-  const filePath = path.join(dataDir, 'queries.json');
-
-  try {
-    // Ensure the .data directory exists
-    await fs.mkdir(dataDir, { recursive: true });
-
-    // Read existing queries, or initialize if the file doesn't exist
-    let queries: QueryData[] = [];
-    try {
-      const fileContent = await fs.readFile(filePath, 'utf-8');
-      queries = JSON.parse(fileContent);
-    } catch (error) {
-      // File doesn't exist or is empty, which is fine
-    }
-
-    // Add the new query and write back to the file
-    queries.push(data);
-    await fs.writeFile(filePath, JSON.stringify(queries, null, 2));
-    console.log(`Query successfully saved to ${filePath}`);
-  } catch (error) {
-    console.error('Fatal: Could not write to local fallback file.', error);
-    // In a real-world scenario, you might trigger an alert here
-  }
+function fallbackStorage(data: QueryData): void {
+  console.warn('Google Sheets failed. Using fallback console log storage.');
+  console.log('Query Data:', JSON.stringify(data, null, 2));
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -220,8 +195,8 @@ export const POST: APIRoute = async ({ request }) => {
       await appendToGoogleSheets(queryData);
     } catch (error) {
       // Fallback to local storage
-      console.error('Google Sheets failed, using fallback storage:', error);
-      await saveToLocalFile(queryData);
+      console.error('Primary storage (Google Sheets) failed. Using fallback.', error);
+      fallbackStorage(queryData);
     }
 
     return new Response(
