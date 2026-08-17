@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import * as jose from 'jose';
+import { Redis } from '@upstash/redis';
 
 // Force this API route to run on Node.js instead of the Edge runtime
 export const runtime = 'edge';
@@ -130,7 +131,12 @@ function fallbackStorage(data: QueryData): void {
   console.log('Query Data:', JSON.stringify(data, null, 2));
 }
 
-export const POST: APIRoute = async ({ request }) => {
+const redis = new Redis({
+  url: import.meta.env.KV_REST_API_URL,
+  token: import.meta.env.KV_REST_API_READ_ONLY_TOKEN,
+});
+
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   // Verify request method
   if (request.method !== 'POST') {
     return new Response(
@@ -143,6 +149,28 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
+    // --- Rate Limiting ---
+    const ip = clientAddress || 'unknown';
+    const key = `rate_limit_${ip}`;
+    const current = await redis.get<number[]>(key);
+
+    const now = Date.now();
+    const oneMinuteAgo = now - 60 * 1000;
+
+    // Filter out timestamps older than one minute
+    const recentTimestamps = current?.filter((ts) => ts > oneMinuteAgo) || [];
+
+    if (recentTimestamps.length >= 5) { // Limit to 5 requests per minute
+      return new Response(JSON.stringify({ error: 'Too many requests' }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Add current request timestamp and set expiration
+    await redis.set(key, [...recentTimestamps, now], { ex: 60 });
+    // --- End Rate Limiting ---
+
     const body = await request.json();
 
     // Validate required fields
@@ -179,13 +207,20 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
+    const sanitize = (str: string) => 
+      str.replace(/&/g, '&amp;')
+         .replace(/</g, '&lt;')
+         .replace(/>/g, '&gt;')
+         .replace(/"/g, '&quot;')
+         .replace(/'/g, '&#039;');
+
     const queryData: QueryData = {
-      name: body.name.trim(),
+      name: sanitize(body.name.trim()),
       email: body.email.trim(),
       phone: body.phone?.trim(),
-      subject: body.subject.trim(),
-      message: body.message.trim(),
-      company: body.company?.trim(),
+      subject: sanitize(body.subject.trim()),
+      message: sanitize(body.message.trim()),
+      company: body.company ? sanitize(body.company.trim()) : undefined,
       consent: body.consent,
       timestamp: new Date().toISOString(),
     };
