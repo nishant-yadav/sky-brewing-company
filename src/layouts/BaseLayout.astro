@@ -7,21 +7,25 @@ const base = import.meta.env.BASE_URL;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{title ? `${title} · Coffee Roastery` : 'Coffee Roastery'}</title>
-    <meta name="description" content={description ?? 'Modern static website for a coffee roastery'} />
+    <title>{title ? `${title} | Estate & Ember` : 'Estate & Ember Coffee Roasters'}</title>
+    <meta name="description" content={description ?? '100% shade-grown Indian specialty coffee from Estate & Ember Coffee Roasters.'} />
   </head>
   <body class="min-h-screen bg-slate-950 text-slate-100">
     <div class="mx-auto max-w-6xl px-6 py-8">
       <header class="mb-14">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p class="text-sm uppercase tracking-[0.32em] text-amber-300">Roastery</p>
-            <h1 class="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">Crafted coffee for every story.</h1>
-          </div>
-          <nav class="flex flex-wrap gap-4 text-sm text-slate-300">
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <a href={base} class="flex items-center gap-4 group">
+            <img src="/estate-ember-logo.jpeg" alt="Estate & Ember Coffee Roasters Logo" class="h-20 w-20 rounded-full border-2 border-amber-400/50 transition group-hover:scale-105" />
+            <div>
+              <p class="text-sm uppercase tracking-[0.32em] text-amber-300">Estate & Ember</p>
+              <h1 class="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">Where Precision Meets Passion.</h1>
+            </div>
+          </a>
+          <nav class="flex flex-wrap gap-4 text-sm text-slate-300 self-center">
             <a href={base} class="hover:text-white">Home</a>
+            <a href={`${base}products/`} class="hover:text-white">Products</a>
+            <a href={`${base}brew-guide/`} class="hover:text-white">Brew Guide</a>
             <a href={`${base}about/`} class="hover:text-white">About</a>
-            <a href={`${base}contact/`} class="hover:text-white">Contact</a>
             <a href={`${base}queries/`} class="hover:text-white">Queries</a>
           </nav>
         </div>
@@ -29,8 +33,31 @@ const base = import.meta.env.BASE_URL;
 
       <main><slot /></main>
 
-      <footer class="mt-20 border-t border-slate-800 pt-8 text-sm text-slate-500">
-        <p>© 2026 Coffee Roastery. Fresh beans, small-batch roasts, delivered with care.</p>
+      <footer class="mt-20 border-t border-slate-800 pt-10">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-sm">
+          <!-- Column 1: Brand Info -->
+          <div class="space-y-4 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-slate-200">Estate & Ember Coffee Roasters</h3>
+            <p class="text-slate-400">Where Precision Meets Passion. 100% shade-grown Indian specialty coffee.</p>
+            <p class="text-slate-500">© {new Date().getFullYear()} Estate & Ember. All rights reserved.</p>
+          </div>
+
+          <!-- Column 2: Contact -->
+          <div class="space-y-2">
+            <h4 class="font-semibold text-slate-300 uppercase tracking-wider">Contact</h4>
+            <ul class="space-y-2 text-slate-400">
+              <li><a href="mailto:estate&ember@gmail.com" class="hover:text-amber-400 transition-colors">estate&ember@gmail.com</a></li>
+              <li><a href="tel:+917903256957" class="hover:text-amber-400 transition-colors">+91 7903256957</a></li>
+            </ul>
+          </div>
+
+          <!-- Column 3: Hours & Location -->
+          <div class="space-y-2">
+            <h4 class="font-semibold text-slate-300 uppercase tracking-wider">Visit Us</h4>
+            <p class="text-slate-400">Pune, Maharashtra, India</p>
+            <p class="text-slate-400">Mon – Sat: 10:00 AM – 10:00 PM</p>
+          </div>
+        </div>
       </footer>
     </div>
   </body>
