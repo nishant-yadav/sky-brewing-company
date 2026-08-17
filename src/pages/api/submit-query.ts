@@ -1,4 +1,7 @@
 import type { APIRoute } from 'astro';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import * as jose from 'jose';
 
 // Force this API route to run on Node.js instead of the Edge runtime
 export const runtime = 'nodejs';
@@ -91,97 +94,17 @@ async function appendToGoogleSheets(data: QueryData): Promise<void> {
 async function getServiceAccountAccessToken(clientEmail: string, rawPrivateKey: string, scope: string): Promise<string> {
   // private key in env often has escaped newlines
   const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
-  const header = { alg: 'RS256', typ: 'JWT' };
-  const iat = Math.floor(Date.now() / 1000);
-  const exp = iat + 60 * 60; // 1 hour
-  const claim = {
-    iss: clientEmail,
-    scope,
-    aud: 'https://oauth2.googleapis.com/token',
-    exp,
-    iat,
-  };
+  const alg = 'RS256';
+  
+  const pkcs8Key = await jose.importPKCS8(privateKey, alg);
 
-  const base64abc = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-  function encodeBase64(bytes: Uint8Array) {
-    let base64 = '';
-    for (let i = 0; i < bytes.length; i += 3) {
-      const chunk = (bytes[i] << 16) | ((bytes[i + 1] ?? 0) << 8) | (bytes[i + 2] ?? 0);
-      base64 += base64abc[(chunk >> 18) & 0x3f];
-      base64 += base64abc[(chunk >> 12) & 0x3f];
-      base64 += i + 1 < bytes.length ? base64abc[(chunk >> 6) & 0x3f] : '=';
-      base64 += i + 2 < bytes.length ? base64abc[chunk & 0x3f] : '=';
-    }
-    return base64;
-  }
-
-  function base64UrlEncodeString(input: string) {
-    const bytes = new TextEncoder().encode(input);
-    return encodeBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  const unsigned = `${base64UrlEncodeString(JSON.stringify(header))}.${base64UrlEncodeString(JSON.stringify(claim))}`;
-
-  // Sign with RSA SHA256 using the Web Crypto API in Edge.
-  const subtle = (globalThis as any).crypto?.subtle;
-  if (!subtle) throw new Error('Web Crypto API not available in this runtime');
-
-  function base64UrlEncode(bytes: Uint8Array) {
-    return encodeBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  function base64UrlToUint8Array(base64: string) {
-    const normalized = base64.replace(/-/g, '+').replace(/_/g, '/');
-    const padLength = (4 - (normalized.length % 4)) % 4;
-    const padded = normalized + '='.repeat(padLength);
-
-    let binary: string;
-    if (typeof atob !== 'undefined') {
-      binary = atob(padded);
-    } else {
-      const base64chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-      const lookup = new Uint8Array(256);
-      for (let i = 0; i < base64chars.length; i++) lookup[base64chars.charCodeAt(i)] = i;
-      const len = padded.length;
-      const bytes = [] as number[];
-      let buffer = 0;
-      let bits = 0;
-      for (let i = 0; i < len; i++) {
-        const ch = padded.charCodeAt(i);
-        if (ch === 61) break;
-        const value = lookup[ch];
-        buffer = (buffer << 6) | value;
-        bits += 6;
-        if (bits >= 8) {
-          bits -= 8;
-          bytes.push((buffer >> bits) & 0xff);
-        }
-      }
-      binary = String.fromCharCode(...bytes);
-    }
-
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return bytes;
-  }
-
-  function pemToArrayBuffer(pem: string) {
-    const b64 = pem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
-    return base64UrlToUint8Array(b64).buffer;
-  }
-
-  const alg = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' } as any;
-  const pkcs8 = pemToArrayBuffer(privateKey);
-  const key = await subtle.importKey('pkcs8', pkcs8, alg, false, ['sign']);
-  const encoder = new TextEncoder();
-  const signatureArrayBuffer = await subtle.sign(alg, key, encoder.encode(unsigned));
-  const signatureUint8 = new Uint8Array(signatureArrayBuffer);
-  const signature = base64UrlEncode(signatureUint8);
-  const jwt = `${unsigned}.${signature}`;
+  const jwt = await new jose.SignJWT({ scope })
+    .setProtectedHeader({ alg })
+    .setIssuedAt()
+    .setIssuer(clientEmail)
+    .setAudience('https://oauth2.googleapis.com/token')
+    .setExpirationTime('1h')
+    .sign(pkcs8Key);
 
   const params = new URLSearchParams();
   params.append('grant_type', 'urn:ietf:params:oauth:grant-type:jwt-bearer');
@@ -205,8 +128,31 @@ async function getServiceAccountAccessToken(clientEmail: string, rawPrivateKey: 
 
 // Function to save to local JSON file as fallback
 async function saveToLocalFile(data: QueryData): Promise<void> {
-  // This is a simple fallback - in production, you'd use a database
-  console.log('Saving query to local storage:', data);
+  console.warn('Google Sheets failed. Saving query to local JSON file.');
+  const dataDir = path.join(process.cwd(), '.data');
+  const filePath = path.join(dataDir, 'queries.json');
+
+  try {
+    // Ensure the .data directory exists
+    await fs.mkdir(dataDir, { recursive: true });
+
+    // Read existing queries, or initialize if the file doesn't exist
+    let queries: QueryData[] = [];
+    try {
+      const fileContent = await fs.readFile(filePath, 'utf-8');
+      queries = JSON.parse(fileContent);
+    } catch (error) {
+      // File doesn't exist or is empty, which is fine
+    }
+
+    // Add the new query and write back to the file
+    queries.push(data);
+    await fs.writeFile(filePath, JSON.stringify(queries, null, 2));
+    console.log(`Query successfully saved to ${filePath}`);
+  } catch (error) {
+    console.error('Fatal: Could not write to local fallback file.', error);
+    // In a real-world scenario, you might trigger an alert here
+  }
 }
 
 export const POST: APIRoute = async ({ request }) => {

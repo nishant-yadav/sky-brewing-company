@@ -1,5 +1,19 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+// This list would ideally come from a shared data source or CMS
+const products = [
+  '100% Arabica AAA',
+  '100% Arabica AA',
+  '100% Robusta AAA (Kaapi Royale)',
+  '100% Robusta AA',
+  'Commercial Blends (80/20 & 70/30 AA)',
+  'Monsoon Malabar AA',
+];
+
+const otherSubjects = [
+  'Wholesale Inquiry', 'Subscription & Rewards', 'General Question', 'Other'
+];
 ---
 <BaseLayout title="Customer Queries | Estate & Ember" description="Submit your coffee inquiry or question to Estate & Ember Coffee Roasters">
   <section class="space-y-10">
@@ -58,12 +72,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-slate-100 focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
           >
             <option value="">Select a subject</option>
-            <option value="Product Inquiry">Product Inquiry</option>
-            <option value="Wholesale Inquiry">Wholesale Inquiry</option>
-            <option value="Subscription">Subscription</option>
-            <option value="Technical Support">Technical Support</option>
-            <option value="General Question">General Question</option>
-            <option value="Other">Other</option>
+            <optgroup label="Product Inquiries">
+              {products.map(product => (
+                <option value={`Inquiry: ${product}`}>{product}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Other Inquiries">
+              {otherSubjects.map(subject => (
+                <option value={subject}>{subject}</option>
+              ))}
+            </optgroup>
           </select>
         </div>
 

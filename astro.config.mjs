@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel/edge';
+import vercel from '@astrojs/vercel/serverless';
 
 const basePath = process.env.SITE_BASE || '/';
 const siteUrl = process.env.SITE_URL || 'https://sky-brewing-company.vercel.app';
